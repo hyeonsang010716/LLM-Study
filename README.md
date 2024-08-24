@@ -26,7 +26,7 @@
 4. Document 임베딩
 5. DB 저장 및 리트리버 생성
 6. LLM 모델 세팅
-7. RAG 체인 진
+7. RAG 체인 진행
 
 ## 5. 최종 결과
 ![image](https://github.com/user-attachments/assets/aeba2579-b893-4b67-b6ca-59daf713ede9)
