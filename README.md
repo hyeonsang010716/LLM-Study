@@ -2,7 +2,7 @@
 #### 해당 프로젝트는 2024 여름방학 LangChain 및 LLM 스터디를 진행하며, 최종 목표인 DACON 재정정보 AI 검색 알고리즘 경진대회에 출전을 목표로 진행했습니다.
 ![ai](https://github.com/user-attachments/assets/8d97a652-9023-457c-b4cb-8ee566ba0eab)
 
-## 1. 프로젝트 인원 및 맡은 역
+## 1. 프로젝트 인원 및 맡은 역할
 - LangChain : 조현상
 - Fine-tuning : 차민수
 - Hugging Face : 정의현
