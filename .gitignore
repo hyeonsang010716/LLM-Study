@@ -2,8 +2,4 @@
 __pycache__/
 open
 file
-<<<<<<< HEAD
 llm
-=======
-.python-version
->>>>>>> f2589ba (FEAT: RAG에 대한 내용 정리)
