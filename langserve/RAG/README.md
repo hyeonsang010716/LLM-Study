@@ -14,24 +14,97 @@ RAG의 작동 방식은 크게 두 단계로 나뉩니다:
 
 - 검색 단계: 사용자가 입력한 질문과 관련된 정보를 데이터베이스에서 검색합니다. 이때 BM25나 Ensemble 같은 Retriever를 사용해서 관련성이 높은 문서를 찾아냅니다.
 - 생성 단계: 검색된 문서를 기반으로 언어 모델이 최종 답변을 생성합니다. 이 과정에서는 검색된 문서의 내용을 요약하거나 특정 정보를 추출하여 답변의 질을 높입니다.
+## RAG 구현
+RAG 구현은 Text 등의 데이터를 document 객체로 변환하고 이를 Embedding해서 Vector Store에 저장하게 됩니다. 여기에 Chain을 연결하여 활용하게 됩니다.
+### Text 등의 데이터 변환
+이 포스트에서는 Text 형식 변환만 다룹니다.
+- 아래 텍스트는 Wikipedia에서 발췌한 일리아스의 요약 일부분입니다.
+``` python
+text = """
+아가멤논은 제우스가 보낸 꿈에서 트로이아가 함락되는 것을 본다. 이 꿈이 무엇을 뜻하는지 아가멤논은 장군들과 토론 끝에, 전체 군사회의를 소집한다. 네스토르와 오디세우스는 열띤 논쟁을 벌이며, 아카이아군은 트로이 정복을 포기하고 귀향하자는 의견에 마음이 솔깃해지지만, 신들의 영향하에 있는 오뒷세우스의 강한 반대와 건의에 따라 트로이군과 빨리 결전을 치르자는 데에 합의를 본다. 시의 후반(484-877 이른바 전함 카탈로그)은 전쟁에 참가한 아카이아군과 트로이아군의 지방, 도시 그리고 지휘관들을 노래하고 있다."""
+ ```
+- 이렇게 Text 형식의 데이터를 청크(Chunk) 단위로 나누어 저장합니다.
+``` python
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-이 과정을 통해 RAG는 모델이 최신 정보를 기반으로 답변하도록 돕습니다.
+text_splitter = RecursiveCharacterTextSplitter(
+chunk_size=300,# 청크 사이즈를 조절
+chunk_overlap=50, # 청크 사이의 겹치는 부분의 크기를 조절
+)
+# document객체로 변환: create_documents는 List[str]의 형태를 요구함
+text_document = text_splitter.create_documents([text])
+``` 
+> 청크 사이즈를 조절하며 ```print(text_documents[0])```를 이용하여 청크의 의미를 확인하셔도 좋습니다.
+## Embedding 모델 호출
+Embedding 모델은 여러 종류가 존재하는데 여기서는 Upstage의 solar-embedding-1-large-passage 모델을 사용합니다.
+> Embedding 모델을 사용하기 위해서 API KEY가 필요합니다. 다음 링크에 들어가 회원가입 후 가져오시면 됩니다. https://console.upstage.ai/docs/getting-started/quick-start
+```python
+from langchain_upstage import UpstageEmbeddings
 
-## RAG의 장점
+# 임베딩 모델 호출
+passge_embedding = UpstageEmbeddings(model="solar-embedding-1-large-passage")
+# documents 임베딩
+embed_texts = passge_embedding.embed_documents([text])
+embed_texts[0] # Text를 임베딩 한 결과값
+```
+## Vector Store 생성
+Vector Store는 Chroma를 사용합니다.
+- Vector Store는 documents 객체와 embedding 모듈을 arguments로 요구합니다.
+ - 위의 코드를 이용하여 전달합니다.
+```python
+from langchain_chroma import Chroma
 
-RAG를 사용하는 주요 장점은 다음과 같습니다.
+db = Chroma.from_documents(
+    documents=text_documents, embedding=passge_embedding, collection_name="my_db"
+)
 
-    •	정확성: 모델이 외부 정보를 활용하여 답변하므로 정확성이 높아집니다.
-    •	유연성: 최신 정보나 훈련 데이터에 없는 정보를 다룰 수 있습니다.
-    •	신뢰도: 검색된 출처가 답변의 근거가 되므로 신뢰성을 확보할 수 있습니다.
+db.get()
+```
+## Retriever
+Retriever는 Vector Store에서 효과적인 검색을 지원하는 도구입니다.
+```python
+# DB 자체 리트리버 확인
+db_retriever = db.as_retriever()
 
-## 실제 구현 예시
+docs = db_retriever.invoke("아가멤논이 꾼 꿈은?")
+docs
+```
+- Ensemble Retriever를 사용하여 Chroma 자체 Retriever와 BM25 Retriever를 결합하여 이용합니다.
+```python
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
 
-노트북에서는 langchain과 langchain_upstage 같은 라이브러리를 활용하여 RAG를 구현하는 과정을 보여주고 있습니다. 코드 예시는 다음과 같은 단계로 구성됩니다.
+bm25_retriever = BM25Retriever.from_texts(text) # BM25 리트리버
+bm25_retriever.k = 2 # 검색은 2개 까지 확인
 
-    •	데이터 임베딩: 데이터베이스에 저장된 문서를 임베딩하여 빠른 검색이 가능하도록 설정합니다.
-    •	질문과 답변: 사용자가 입력한 질문을 통해 관련 문서를 검색하고, 그 문서를 바탕으로 언어 모델이 답변을 생성합니다.
+ensemble_retriever = EnsembleRetriever(
+    retrievers=[db_retriever, bm25_retriever], weights=[0.5, 0.5] # 각 리트리버의 가중치를 설정
 
-5. 마무리
+docs = ensemble_retriever.invoke("아가멤논이 꾼 꿈은?")
+docs
+```
+## RAG 체인 생성
+retriever와 RunablePassthrough를 사용하여 Rag Chain을 구성합니다
+- RunablePassthrough는 입력을 그대로 전달하는 역할을 수행합니다.
+- context는 LLM이 답변을 잘 할 수 있도록 도우는 문맥 정보입니다.
+```python
+from langchain_core.runnables import RunnablePassthrough
 
-RAG는 생성형 AI의 활용성을 한 단계 더 끌어올릴 수 있는 유망한 접근법입니다. 이를 통해 AI 모델이 더욱 신뢰할 수 있는 정보 기반 응답을 제공할 수 있으며, 다양한 분야에서 RAG를 적용하여 더 나은 사용자 경험을 제공할 수 있을 것입니다. ￼
+rag_prompt = ChatPromptTemplate.from_template(
+    """
+    Answer the question based only on the following context:
+{context}
+
+Question: {question}
+    """
+)
+rag_chain = (
+    {"context": ensemble_retriever, "question": RunnablePassthrough()}
+    | rag_prompt
+    | llm
+    | StrOutputParser()
+)
+
+rag_chain.invoke("아가멤논이 꾼 꿈은?")
+```
+| 최종 결과를 확인하면 답변이 잘 나오는 것을 알 수 있습니다.
