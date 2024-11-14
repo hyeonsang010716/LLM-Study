@@ -1,7 +1,0 @@
-langchain-upstage
-langchain-core
-langserve
-fastapi 
-python-dotenv
-uvicorn
-sse_starlette

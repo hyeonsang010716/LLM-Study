@@ -1,0 +1,13 @@
+langchain-upstage
+langchain-core
+langserve
+fastapi 
+python-dotenv
+uvicorn
+sse_starlette
+rank_bm25
+# langchain-teddynote
+langchain-community
+langchain-text-splitters
+langchain_chroma
+typing
