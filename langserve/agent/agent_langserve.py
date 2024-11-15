@@ -29,21 +29,16 @@ class Input(BaseModel):
 class Output(BaseModel):
     output: Any
 
-@app.get("/")
-async def redirect_root_to_chat(): # root 대신 chat 화면으로 보내기
-    return RedirectResponse("/stream/playground")
+# @app.get("/")
+# async def redirect_root_to_chat(): # root 대신 chat 화면으로 보내기
+#     return RedirectResponse("/stream/playground")
 
 # Adds routes to the app for using the chain under:
-# /invoke
-# /batch
-# /stream
-# /stream_events
 add_routes(
     app,
     agent_executor.with_types(input_type=Input, output_type=Output).with_config(
         {"run_name": "agent"}
     ),
-    path="/stream"
 )
 
 if __name__ == "__main__":

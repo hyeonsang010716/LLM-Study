@@ -8,10 +8,14 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from dotenv import load_dotenv
+import os
 load_dotenv()
 
+dir_path = os.path.dirname(os.path.abspath(__file__))
+text_path = os.path.join(dir_path, "assets")
+
 text = []
-with open("assets/total_text.txt", "r", encoding="utf-8") as f:
+with open(text_path+"/total_text.txt", "r", encoding="utf-8") as f:
     text.append(f.read())
 
 text_splitter = RecursiveCharacterTextSplitter(
