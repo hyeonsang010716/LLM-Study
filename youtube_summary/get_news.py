@@ -19,5 +19,10 @@ def search_video(keyword: str):
     if response["items"]:
         return response['items'][0]['id']['videoId']
     else:
-        return None
+        return None    
 
+
+def get_news_context(keyword):
+    ytube_id = search_video(keyword)
+    text = get_video_details(ytube_id)
+    return text
