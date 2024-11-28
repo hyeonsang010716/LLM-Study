@@ -26,3 +26,7 @@ def get_news_context(keyword):
     ytube_id = search_video(keyword)
     text = get_video_details(ytube_id)
     return text
+
+if __name__ == "__main__":
+    keyword = "폭설"
+    print(get_news_context(keyword))
